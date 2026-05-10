@@ -168,7 +168,7 @@ def cmd_exit(session, **kwargs):
     raise SystemExit
 
 
-@register("table", "Manage tables\n  table add <name> <range> [--header row|column|both|none]\n  table list\n  table remove <name>\n  table clear")
+@register("table", "Manage tables\n  table add <name> <range> [--header row|column|both|none]\n  table list\n  table remove <name>\n  table clear\n  table detect [--register] [--prefix <name>]")
 def cmd_table(session, **kwargs):
     pos = kwargs.get("_pos", [])
     if not pos:
@@ -203,5 +203,21 @@ def cmd_table(session, **kwargs):
     if sub == "clear":
         session.clear_tables()
         return {"message": "All tables cleared"}
+
+    if sub == "detect":
+        sheet = kwargs.get("s") or kwargs.get("sheet")
+        prefix = kwargs.get("prefix")
+        do_register = "register" in kwargs
+        try:
+            tables = session.detect_tables(sheet, prefix)
+            if do_register:
+                for t in tables:
+                    session.register_table(t["name"], t["range"], sheet, header=t["header_type"])
+                return {"message": f"Registered {len(tables)} table(s)"}
+            if not tables:
+                return {"message": f"No tables detected. Use `table add <name> <range>` to register manually."}
+            return {"detected": tables, "sheet": sheet or session.current_sheet}
+        except ValueError as e:
+            return {"error": str(e)}
 
     return {"error": f"Unknown subcommand: {sub}"}

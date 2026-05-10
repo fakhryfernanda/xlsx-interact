@@ -89,6 +89,14 @@ uv run xlsx data.xlsx info
 | `find <query> --merged` | Find cells that belong to merged ranges |
 | `doc` | Generate summary report for current sheet |
 | `doc --all` | Generate summary report for all sheets |
+| `table add <name> <range>` | Register a manual table range for `--table` context |
+| `table add --header column\|both\|none` | Set header type (default: row) |
+| `table list` | List all manual tables for current sheet |
+| `table remove <name>` | Remove a manual table |
+| `table clear` | Remove all manual tables |
+| `table detect` | Auto-detect table regions via border-line scanning (dry-run) |
+| `table detect --register` | Auto-detect and persist to `.xlsx.tables.json` |
+| `table detect --register --prefix <name>` | Custom table name prefix |
 
 ## Doc Report
 
@@ -119,6 +127,33 @@ Sheet2 — 50 rows, 10 cols
   Tables: (none)
 
 Named ranges: (none)
+```
+
+## `table detect` ⚠️ NEEDS IMPROVEMENT
+
+> **Known issues:** columns preview still includes non-descriptive values (numbers like `1.0`, truncation collisions). The detection logic and output formatting need refinement.
+
+Auto-detect table regions by scanning for border separator rows. A separator is a row where a visual border line spans most columns AND at least one adjacent row is mostly empty. The detection checks both the cell's own borders and adjacent cells' borders to catch all visual lines.
+
+```
+$ uv run xlsx data.xlsx "table detect"
+Detected 2 table(s) in Sheet1:
+
+  SalesReport — A1:D10 (10 rows, 4 cols)
+    Header: row (row 1)
+    Columns: Product, Qty, Price, Total
+
+  Inventory — A12:D25 (14 rows, 4 cols)
+    Header: row (row 12)
+    Columns: SKU, Stock, Location, Status
+
+Use `table detect --register` to persist these tables.
+
+$ uv run xlsx data.xlsx "table detect --register"
+Registered 2 table(s)
+
+$ uv run xlsx data.xlsx "table detect --register --prefix Report"
+(registers as Report_1, Report_2, ...)
 ```
 
 ## Architecture

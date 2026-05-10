@@ -46,6 +46,7 @@ def run(session):
             print()
             continue
 
+        fmt = kwargs.pop("f", "text")
         try:
             data = entry["fn"](session, **kwargs)
         except SystemExit:
@@ -67,5 +68,5 @@ def run(session):
             print()
             continue
 
-        print(formatter.render(cmd_name, data))
+        print(formatter.render(cmd_name, data, fmt))
         print()

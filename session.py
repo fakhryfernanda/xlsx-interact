@@ -336,6 +336,114 @@ class Session:
         self._tables.pop(sheet, None)
         self._save_tables()
 
+    def detect_tables(self, sheet=None, prefix=None):
+        sheet = sheet or self._current_sheet
+        if sheet not in self.wb.sheetnames:
+            raise ValueError(f"Sheet '{sheet}' not found.")
+        ws = self.wb[sheet]
+
+        effective_cols = 1
+        for r in range(1, ws.max_row + 1):
+            for c in range(1, ws.max_column + 1):
+                if ws.cell(row=r, column=c).value is not None:
+                    effective_cols = max(effective_cols, c)
+
+        separators = []
+        for r in range(1, ws.max_row):
+            border_count = 0
+            empty_this = 0
+            empty_next = 0
+            for c in range(1, effective_cols + 1):
+                if self._border_between(ws, r, c):
+                    border_count += 1
+                if ws.cell(row=r, column=c).value is None:
+                    empty_this += 1
+                if ws.cell(row=r + 1, column=c).value is None:
+                    empty_next += 1
+
+            coverage = border_count / effective_cols
+            row_empty = (empty_this / effective_cols) > 0.6
+            next_empty = (empty_next / effective_cols) > 0.6
+
+            if coverage >= 0.75 or (coverage >= 0.50 and (row_empty or next_empty)):
+                separators.append(r)
+
+        if not separators:
+            return []
+
+        regions = []
+        start = 1
+        for sep in separators:
+            if sep >= start and sep - start + 1 >= 2:
+                regions.append((start, sep))
+            start = sep + 1
+        if ws.max_row >= start and ws.max_row - start + 1 >= 2:
+            regions.append((start, ws.max_row))
+
+        used_names = set()
+        tables = []
+        idx = 0
+        for r_start, r_end in regions:
+            col_start = effective_cols + 1
+            col_end = 0
+            for r in range(r_start, r_end + 1):
+                for c in range(1, effective_cols + 1):
+                    if ws.cell(row=r, column=c).value is not None:
+                        col_start = min(col_start, c)
+                        col_end = max(col_end, c)
+
+            if col_end == 0:
+                continue
+
+            idx += 1
+            range_str = f"{utils.get_column_letter(col_start)}{r_start}:{utils.get_column_letter(col_end)}{r_end}"
+
+            header_val = str(ws.cell(row=r_start, column=col_start).value or "")
+            if prefix:
+                name = f"{prefix}_{idx}"
+            else:
+                base = self._sanitize_name(header_val) or f"Table_{idx}"
+                name = base
+                counter = 1
+                while name in used_names:
+                    counter += 1
+                    name = f"{base}_{counter}"
+            used_names.add(name)
+
+            header_columns = []
+            for c in range(col_start, col_end + 1):
+                v = str(ws.cell(row=r_start, column=c).value or "")
+                if v:
+                    header_columns.append(v)
+
+            tables.append({
+                "name": name,
+                "range": range_str,
+                "rows": r_end - r_start + 1,
+                "cols": col_end - col_start + 1,
+                "header_row": r_start,
+                "header_type": "row",
+                "columns": header_columns,
+            })
+
+        return tables
+
+    @staticmethod
+    def _border_between(ws, row, col):
+        cell = ws.cell(row=row, column=col)
+        below = ws.cell(row=row + 1, column=col)
+        has_bottom = cell.border.bottom.style if cell.border and cell.border.bottom else None
+        has_top = below.border.top.style if below.border and below.border.top else None
+        return bool(has_bottom or has_top)
+
+    @staticmethod
+    def _sanitize_name(text):
+        import re
+        cleaned = re.sub(r"[^a-zA-Z0-9_ ]", "", text)
+        cleaned = cleaned.strip()
+        cleaned = re.sub(r"\s+", "_", cleaned)
+        return cleaned[:30] if cleaned else None
+
     def _load_tables(self):
         try:
             with open(self._tables_path) as f:

@@ -72,6 +72,30 @@ def _help(data, fmt):
 def _table(data, fmt):
     if fmt == "json":
         return json.dumps(data, indent=2)
+    if isinstance(data, dict) and "detected" in data:
+        tables = data["detected"]
+        lines = [f"Detected {len(tables)} table(s) in {data.get('sheet', 'current sheet')}:\n"]
+        for t in tables:
+            cols = t.get("columns", [])
+            clean = []
+            for c in cols:
+                v = c.replace("\n", " ")
+                if v.startswith("="):
+                    continue
+                if len(v) > 25:
+                    v = v[:22] + "..."
+                clean.append(v)
+            lines.append(f"  {t['name']} — {t['range']} ({t['rows']} rows, {t['cols']} cols)")
+            lines.append(f"    Header: {t['header_type']} (row {t['header_row']})")
+            if clean:
+                preview = ", ".join(clean[:5])
+                if len(clean) > 5:
+                    preview += ", ..."
+                lines.append(f"    Columns: {preview}")
+            else:
+                lines.append(f"    {t['cols']} columns")
+        lines.append(f"\nUse `table detect --register` to persist these tables.")
+        return "\n".join(lines)
     if isinstance(data, list):
         if not data:
             return "No tables registered"

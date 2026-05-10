@@ -27,7 +27,24 @@ def main():
     if not args.command:
         repl_mod.run(session)
     else:
-        line = f"{args.command} {' '.join(args.args)}"
+        fmt = "text"
+        rest = []
+        i = 0
+        while i < len(args.args):
+            a = args.args[i]
+            if a in ("-f", "--format") and i + 1 < len(args.args):
+                fmt = args.args[i + 1]
+                i += 2
+            elif a == "-f":
+                fmt = "json"
+                i += 1
+            elif a.startswith("-f") and len(a) > 2 and a[2] != " ":
+                fmt = a[2:]
+                i += 1
+            else:
+                rest.append(a)
+                i += 1
+        line = f"{args.command} {' '.join(rest)}"
         cmd_name, kwargs = cmds.parse(line)
         entry = cmds.COMMANDS.get(cmd_name)
         if not entry:
@@ -38,7 +55,7 @@ def main():
             sys.exit(f"Error: {e}")
         if isinstance(data, dict) and "error" in data:
             sys.exit(data["error"])
-        print(formatter.render(cmd_name, data, args.format))
+        print(formatter.render(cmd_name, data, fmt))
 
     session.close()
 
