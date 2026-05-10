@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import datetime, date
 
 from openpyxl import load_workbook, utils
@@ -88,6 +89,59 @@ class Session:
                     "type": _TYPE_LABELS.get(top.data_type, "unknown"),
                 }
         return None
+
+    def trace(self, ref, sheet=None):
+        sheet = sheet or self._current_sheet
+        val, ctype = self.cell(ref, sheet)
+        if ctype != "formula":
+            merged = self.cell_merged(ref, sheet)
+            if merged and merged["type"] == "formula":
+                mrange = merged["range"]
+                min_col, min_row, _, _ = utils.range_boundaries(mrange)
+                ref = f"{utils.get_column_letter(min_col)}{min_row}"
+                cell = self._resolve_cell(ref, sheet)
+                val, ctype = self.cell(ref, sheet)
+            else:
+                raise ValueError(f"'{ref}' is not a formula")
+        else:
+            cell = self._resolve_cell(ref, sheet)
+        formula = cell.value or ""
+        pattern = r"(?:(?:'[^']+'|[A-Za-z_]\w*)!)?\$?[A-Z]+\$?\d+(?::\$?[A-Z]+\$?\d+)?"
+        matches = re.findall(pattern, formula)
+        seen = set()
+        deps = []
+        for m in matches:
+            if "!" in m:
+                s_part, r_part = m.split("!", 1)
+                s_name = s_part.strip("'")
+                r_clean = r_part.replace("$", "")
+            else:
+                s_name = sheet
+                r_clean = m.replace("$", "")
+            key = f"{s_name}!{r_clean}"
+            if key in seen:
+                continue
+            seen.add(key)
+            deps.append({"ref": r_clean, "sheet": s_name})
+        results = []
+        for dep in deps:
+            if ":" in dep["ref"]:
+                results.append({"ref": dep["ref"], "sheet": dep["sheet"], "value": None, "type": "range", "computed": None})
+            else:
+                try:
+                    v, t = self.cell(dep["ref"], dep["sheet"])
+                except ValueError:
+                    v = "(error)"
+                    t = "error"
+                results.append({"ref": dep["ref"], "sheet": dep["sheet"], "value": v, "type": t, "computed": None})
+        computed = self.cell_computed(ref, sheet)
+        return {
+            "ref": ref.upper(),
+            "sheet": sheet,
+            "formula": str(formula),
+            "computed": computed,
+            "dependencies": results,
+        }
 
     def cell_style(self, ref, sheet=None):
         cell = self._resolve_cell(ref, sheet)

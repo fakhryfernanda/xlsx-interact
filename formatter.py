@@ -81,6 +81,20 @@ def _table(data, fmt):
     return str(data)
 
 
+def _trace(data, fmt):
+    if fmt == "json":
+        return json.dumps(data, indent=2)
+    lines = [f"[{data['sheet']}] {data['ref']} = {data['formula']} (formula)"]
+    for d in data["dependencies"]:
+        if d["type"] == "range":
+            lines.append(f"  {d['ref']} (range)")
+        else:
+            v = d["value"] if d["value"] else "(empty)"
+            lines.append(f"  {d['ref']} = {v} ({d['type']})")
+    lines.append(f"  {data['ref']} = {data['computed']} (computed)")
+    return "\n".join(lines)
+
+
 _RENDERERS = {
     "cell": _cell,
     "sheets": _sheets,
@@ -88,4 +102,5 @@ _RENDERERS = {
     "sheet": _sheet,
     "help": _help,
     "table": _table,
+    "trace": _trace,
 }

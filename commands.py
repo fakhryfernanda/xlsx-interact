@@ -114,6 +114,19 @@ def cmd_sheet(session, **kwargs):
     return {"sheet": name}
 
 
+@register("trace", "Trace formula dependencies\n  trace <ref> [-s sheet]")
+def cmd_trace(session, **kwargs):
+    pos = kwargs.get("_pos", [])
+    if not pos:
+        return {"error": "Usage: trace <ref> [-s sheet]"}
+    ref = pos[0]
+    sheet = kwargs.get("s") or kwargs.get("sheet")
+    try:
+        return session.trace(ref, sheet)
+    except ValueError as e:
+        return {"error": str(e)}
+
+
 @register("help", "Show this help")
 def cmd_help(session, **kwargs):
     return [

@@ -40,14 +40,20 @@ xlsx> cell C5 --table   (with header=both)
   Column: "Price"
   Row: "SKU-001"
 xlsx> cell E1           (merged cell D1:E1)
-[Sheet1] E1 = After DC - Immediate Cash (3-months) (text)
+[Sheet1] E1 = Sales Projection (text)
   Merged: D1:E1
 xlsx> cell E1 --computed
-[Sheet1] E1 = After DC - Immediate Cash (3-months) (text)
+[Sheet1] E1 = Sales Projection (text)
   Merged: D1:E1
 xlsx> cell E3 --table   (merged column header)
   Table: Data (A1:E3)
-  Column: "After DC - Immediate Cash (3-months)"
+  Column: "Sales Projection"
+xlsx> trace C5
+[Sheet1] C5 = =(A3-B2)*C1/100 (formula)
+  A3 = 50000 (number)
+  B2 = 12000 (number)
+  C1 = 15 (number)
+  C5 = 5700 (computed)
 xlsx> cell B2 -s Sheet1
 xlsx> sheets
 xlsx> info
@@ -74,6 +80,8 @@ uv run xlsx data.xlsx info
 | `cell <ref> --style` | Show font, fill, border, alignment, number format |
 | `cell <ref> --table` | Show containing Excel table name, range, column header, and row label (depends on header type) |
 | `cell <ref> -s <sheet>` | Target a specific sheet |
+| `trace <ref>` | Trace formula dependencies — extract all cell references in the formula and show their current values (1 level flat) |
+| `trace <ref> -s <sheet>` | Trace on a specific sheet |
 | `sheets` | List all sheets |
 | `sheets <name>` | Filter sheets by name |
 | `info` | Show file info |
