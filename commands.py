@@ -110,7 +110,7 @@ def cmd_exit(session, **kwargs):
     raise SystemExit
 
 
-@register("table", "Manage tables\n  table add <name> <range>\n  table list\n  table remove <name>\n  table clear")
+@register("table", "Manage tables\n  table add <name> <range> [--header row|column|both|none]\n  table list\n  table remove <name>\n  table clear")
 def cmd_table(session, **kwargs):
     pos = kwargs.get("_pos", [])
     if not pos:
@@ -125,11 +125,14 @@ def cmd_table(session, **kwargs):
         if len(pos) < 3:
             return {"error": "Usage: table add <name> <range>"}
         name, ref = pos[1], pos[2]
+        header = kwargs.get("header", "row")
+        if header not in ("row", "column", "both", "none"):
+            return {"error": "Header must be row, column, both, or none"}
         try:
-            session.register_table(name, ref)
+            session.register_table(name, ref, header=header)
         except ValueError as e:
             return {"error": str(e)}
-        return {"message": f"Registered table \"{name}\" ({ref.upper()})", "name": name, "range": ref.upper()}
+        return {"message": f"Registered table \"{name}\" ({ref.upper()}) with header={header}", "name": name, "range": ref.upper(), "header": header}
 
     if sub == "remove":
         if len(pos) < 2:

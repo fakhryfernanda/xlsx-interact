@@ -17,7 +17,10 @@ def _cell(data, fmt):
     if "table" in data and data["table"] is not None:
         t = data["table"]
         parts.append(f"  Table: {t['name']} ({t['range']})")
-        parts.append(f"  Column: \"{t['column']}\"")
+        if "column" in t:
+            parts.append(f"  Column: \"{t['column']}\"")
+        if "row" in t:
+            parts.append(f"  Row: \"{t['row']}\"")
     if "style" in data:
         s = data["style"]
         f = s["font"]
@@ -70,7 +73,7 @@ def _table(data, fmt):
     if isinstance(data, list):
         if not data:
             return "No tables registered"
-        return "\n".join(f"{t['name']} ({t['range']})" for t in data)
+        return "\n".join(f"{t['name']} ({t['range']}) [header={t.get('header', 'row')}]" for t in data)
     if isinstance(data, dict) and "message" in data:
         return data["message"]
     return str(data)

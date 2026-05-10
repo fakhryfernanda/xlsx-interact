@@ -35,6 +35,10 @@ xlsx> cell B2 --table
 [Manual DO] B2 = 95 (number)
   Table: TransactionData (A1:Z1000)
   Column: "Amount"
+xlsx> cell C5 --table   (with header=both)
+  Table: ProductData (B2:E20)
+  Column: "Price"
+  Row: "SKU-001"
 xlsx> cell B2 -s Sheet1
 xlsx> sheets
 xlsx> info
@@ -59,7 +63,7 @@ uv run xlsx data.xlsx info
 | `cell <ref>` | Get cell value with auto-detected type (number/text/formula/date/boolean/error/empty) |
 | `cell <ref> --computed` | Show computed value instead of formula string |
 | `cell <ref> --style` | Show font, fill, border, alignment, number format |
-| `cell <ref> --table` | Show containing Excel table name, range, and column header |
+| `cell <ref> --table` | Show containing Excel table name, range, column header, and row label (depends on header type) |
 | `cell <ref> -s <sheet>` | Target a specific sheet |
 | `sheets` | List all sheets |
 | `sheets <name>` | Filter sheets by name |
@@ -67,8 +71,8 @@ uv run xlsx data.xlsx info
 | `sheet <name>` | Switch current sheet |
 | `help` | Show available commands |
 | `exit` | Exit REPL |
-| `table add <name> <range>` | Register a table name and range on current sheet |
-| `table list` | List registered tables on current sheet |
+| `table add <name> <range> [--header row\|column\|both\|none]` | Register a table with header type (default: row) |
+| `table list` | List registered tables on current sheet showing header type |
 | `table remove <name>` | Remove a registered table |
 | `table clear` | Remove all registered tables on current sheet |
 

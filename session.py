@@ -119,24 +119,27 @@ class Session:
                     "range": tref,
                     "column": self._fmt(header_cell.value),
                 }
-        for tname, tref in self._tables.get(sheet, {}).items():
-            bounds = utils.range_boundaries(tref)
+        for tname, meta in self._tables.get(sheet, {}).items():
+            if isinstance(meta, str):
+                continue
+            bounds = utils.range_boundaries(meta["range"])
             if bounds and bounds[0] <= col <= bounds[2] and bounds[1] <= row <= bounds[3]:
-                header_cell = ws.cell(row=bounds[1], column=col)
-                return {
-                    "name": tname,
-                    "range": tref,
-                    "column": self._fmt(header_cell.value),
-                }
+                result = {"name": tname, "range": meta["range"]}
+                h = meta.get("header", "row")
+                if h in ("row", "both"):
+                    result["column"] = self._fmt(ws.cell(row=bounds[1], column=col).value)
+                if h in ("column", "both"):
+                    result["row"] = self._fmt(ws.cell(row=row, column=bounds[0]).value)
+                return result
         return None
 
-    def register_table(self, name, ref, sheet=None):
+    def register_table(self, name, ref, sheet=None, header="row"):
         sheet = sheet or self._current_sheet
         try:
             utils.range_boundaries(ref)
         except (ValueError, AttributeError):
             raise ValueError(f"Invalid range: {ref}")
-        self._tables.setdefault(sheet, {})[name] = ref.upper()
+        self._tables.setdefault(sheet, {})[name] = {"range": ref.upper(), "header": header}
         self._save_tables()
 
     def unregister_table(self, name, sheet=None):
@@ -148,10 +151,12 @@ class Session:
 
     def list_tables(self, sheet=None):
         sheet = sheet or self._current_sheet
-        return [
-            {"name": n, "range": r, "sheet": sheet}
-            for n, r in self._tables.get(sheet, {}).items()
-        ]
+        result = []
+        for name, meta in self._tables.get(sheet, {}).items():
+            if isinstance(meta, str):
+                continue
+            result.append({"name": name, "range": meta["range"], "header": meta.get("header", "row"), "sheet": sheet})
+        return result
 
     def clear_tables(self, sheet=None):
         sheet = sheet or self._current_sheet
@@ -161,9 +166,18 @@ class Session:
     def _load_tables(self):
         try:
             with open(self._tables_path) as f:
-                self._tables = json.load(f)
+                raw = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             self._tables = {}
+            return
+        self._tables = {}
+        for sheet, tables in raw.items():
+            if not isinstance(tables, dict):
+                continue
+            self._tables[sheet] = {}
+            for name, meta in tables.items():
+                if isinstance(meta, dict) and "range" in meta:
+                    self._tables[sheet][name] = meta
 
     def _save_tables(self):
         with open(self._tables_path, "w") as f:
