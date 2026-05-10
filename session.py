@@ -194,6 +194,52 @@ class Session:
                 })
         return results
 
+    def doc(self, all_sheets=False):
+        result = {
+            "filename": os.path.basename(self.path),
+            "size": os.path.getsize(self.path),
+            "all_sheets": all_sheets,
+            "sheets": [],
+        }
+        names = self.wb.sheetnames if all_sheets else [self._current_sheet]
+        if all_sheets:
+            named = []
+            for dn in self.wb.defined_names:
+                try:
+                    for _ in dn.destinations:
+                        named.append(dn.name)
+                        break
+                except Exception:
+                    pass
+            result["named_ranges"] = list(dict.fromkeys(named))
+        for name in names:
+            ws = self.wb[name]
+            formulas = 0
+            total = 0
+            for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
+                for cell in row:
+                    total += 1
+                    if cell.data_type == "f":
+                        formulas += 1
+            tables = []
+            for tname, tref in ws.tables.items():
+                tables.append({"name": tname, "range": tref})
+            for tname, meta in self._tables.get(name, {}).items():
+                if isinstance(meta, dict) and "range" in meta:
+                    tables.append({"name": tname, "range": meta["range"], "header": meta.get("header", "row")})
+            first = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), [])
+            result["sheets"].append({
+                "name": name,
+                "hidden": ws.sheet_state == "hidden",
+                "rows": ws.max_row or 0,
+                "cols": len(first),
+                "total_cells": total,
+                "formulas": formulas,
+                "merged_ranges": len(ws.merged_cells.ranges),
+                "tables": tables,
+            })
+        return result
+
     def cell_style(self, ref, sheet=None):
         cell = self._resolve_cell(ref, sheet)
         f = cell.font

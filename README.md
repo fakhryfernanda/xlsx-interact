@@ -87,16 +87,39 @@ uv run xlsx data.xlsx info
 | `find <query> --empty` | Find all empty cells (shortcut for `--type empty`) |
 | `find <query> --formula <pattern>` | Find formulas containing a function or pattern |
 | `find <query> --merged` | Find cells that belong to merged ranges |
-| `sheets` | List all sheets |
-| `sheets <name>` | Filter sheets by name |
-| `info` | Show file info |
-| `sheet <name>` | Switch current sheet |
-| `help` | Show available commands |
-| `exit` | Exit REPL |
-| `table add <name> <range> [--header row\|column\|both\|none]` | Register a table with header type (default: row) |
-| `table list` | List registered tables on current sheet showing header type |
-| `table remove <name>` | Remove a registered table |
-| `table clear` | Remove all registered tables on current sheet |
+| `doc` | Generate summary report for current sheet |
+| `doc --all` | Generate summary report for all sheets |
+
+## Doc Report
+
+```
+$ uv run xlsx data.xlsx doc
+File: data.xlsx (50,000 bytes)
+
+Sheet1 — 100 rows, 20 cols
+  Total cells: 2,000
+  Formulas: 150
+  Merged ranges: 5
+  Tables: (none)
+
+$ uv run xlsx data.xlsx "doc --all"
+File: data.xlsx (50,000 bytes)
+Sheets: 3
+
+Sheet1 — 100 rows, 20 cols
+  Total cells: 2,000
+  Formulas: 150
+  Merged ranges: 5
+  Table: TransactionData (A1:Z1000)
+
+Sheet2 — 50 rows, 10 cols
+  Total cells: 500
+  Formulas: 30
+  Merged ranges: 0
+  Tables: (none)
+
+Named ranges: (none)
+```
 
 ## Architecture
 

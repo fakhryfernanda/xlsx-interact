@@ -114,6 +114,43 @@ def _find(data, fmt):
     return str(data)
 
 
+def _doc(data, fmt):
+    if fmt == "json":
+        return json.dumps(data, indent=2)
+    lines = [f"File: {data['filename']} ({data['size']:,} bytes)"]
+    if not data.get("all_sheets"):
+        s = data["sheets"][0]
+        tag = " (hidden)" if s["hidden"] else ""
+        lines.append(f"\n{s['name']}{tag} — {s['rows']} rows, {s['cols']} cols")
+        lines.append(f"  Total cells: {s['total_cells']:,}")
+        lines.append(f"  Formulas: {s['formulas']:,}")
+        lines.append(f"  Merged ranges: {s['merged_ranges']:,}")
+        for t in s["tables"]:
+            lines.append(f"  Table: {t['name']} ({t['range']})")
+        if not s["tables"]:
+            lines.append("  Tables: (none)")
+        return "\n".join(lines)
+    lines.append(f"Sheets: {len(data['sheets'])}\n")
+    for s in data["sheets"]:
+        tag = " (hidden)" if s["hidden"] else ""
+        lines.append(f"{s['name']}{tag} — {s['rows']} rows, {s['cols']} cols")
+        lines.append(f"  Total cells: {s['total_cells']:,}")
+        lines.append(f"  Formulas: {s['formulas']:,}")
+        lines.append(f"  Merged ranges: {s['merged_ranges']:,}")
+        if s["tables"]:
+            for t in s["tables"]:
+                lines.append(f"  Table: {t['name']} ({t['range']})")
+        else:
+            lines.append("  Tables: (none)")
+        lines.append("")
+    named = data.get("named_ranges", [])
+    if named:
+        lines.append(f"Named ranges: {', '.join(named)}")
+    else:
+        lines.append("Named ranges: (none)")
+    return "\n".join(lines)
+
+
 _RENDERERS = {
     "cell": _cell,
     "sheets": _sheets,
@@ -123,4 +160,5 @@ _RENDERERS = {
     "table": _table,
     "trace": _trace,
     "find": _find,
+    "doc": _doc,
 }

@@ -146,6 +146,14 @@ def cmd_find(session, **kwargs):
         return {"error": str(e)}
 
 
+@register("doc", "Generate workbook summary report\n  doc [--all]")
+def cmd_doc(session, **kwargs):
+    try:
+        return session.doc(all_sheets="all" in kwargs)
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @register("help", "Show this help")
 def cmd_help(session, **kwargs):
     return [
