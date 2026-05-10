@@ -82,6 +82,11 @@ uv run xlsx data.xlsx info
 | `cell <ref> -s <sheet>` | Target a specific sheet |
 | `trace <ref>` | Trace formula dependencies — extract all cell references in the formula and show their current values (1 level flat) |
 | `trace <ref> -s <sheet>` | Trace on a specific sheet |
+| `find <query>` | Search cells in current sheet by value or reference (case-insensitive) |
+| `find <query> --type number\|text\|formula` | Filter by cell type |
+| `find <query> --empty` | Find all empty cells (shortcut for `--type empty`) |
+| `find <query> --formula <pattern>` | Find formulas containing a function or pattern |
+| `find <query> --merged` | Find cells that belong to merged ranges |
 | `sheets` | List all sheets |
 | `sheets <name>` | Filter sheets by name |
 | `info` | Show file info |

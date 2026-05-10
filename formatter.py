@@ -95,6 +95,25 @@ def _trace(data, fmt):
     return "\n".join(lines)
 
 
+def _find(data, fmt):
+    if fmt == "json":
+        return json.dumps(data, indent=2)
+    if isinstance(data, list):
+        if not data:
+            return "No matches found"
+        lines = []
+        for d in data:
+            v = d["value"] if d["value"] else "(empty)"
+            line = f"  {d['ref']} = {v} ({d['type']})"
+            if d.get("merged_range"):
+                line += f" [Merged: {d['merged_range']}]"
+            lines.append(line)
+        return f"{len(data)} match(es)\n" + "\n".join(lines)
+    if isinstance(data, dict) and "message" in data:
+        return data["message"]
+    return str(data)
+
+
 _RENDERERS = {
     "cell": _cell,
     "sheets": _sheets,
@@ -103,4 +122,5 @@ _RENDERERS = {
     "help": _help,
     "table": _table,
     "trace": _trace,
+    "find": _find,
 }

@@ -127,6 +127,25 @@ def cmd_trace(session, **kwargs):
         return {"error": str(e)}
 
 
+@register("find", "Search cells in current sheet\n  find <query> [--type number|text|formula|empty] [--formula <pattern>] [--empty] [--merged]")
+def cmd_find(session, **kwargs):
+    pos = kwargs.get("_pos", [])
+    query = pos[0] if pos else None
+    sheet = kwargs.get("s") or kwargs.get("sheet")
+    type_filter = kwargs.get("type")
+    if "empty" in kwargs:
+        type_filter = "empty"
+    formula_pattern = kwargs.get("formula")
+    merged_only = "merged" in kwargs
+    if not query and not type_filter and not formula_pattern and not merged_only:
+        return {"error": "Usage: find <query> [--type number|text|formula|empty] [--formula <pattern>] [--empty] [--merged]"}
+    try:
+        results = session.find(query, sheet, type_filter, formula_pattern, merged_only)
+        return results if results else {"message": "No matches found"}
+    except ValueError as e:
+        return {"error": str(e)}
+
+
 @register("help", "Show this help")
 def cmd_help(session, **kwargs):
     return [

@@ -143,6 +143,57 @@ class Session:
             "dependencies": results,
         }
 
+    def find(self, query=None, sheet=None, type_filter=None, formula_pattern=None, merged_only=False):
+        sheet = sheet or self._current_sheet
+        ws = self.wb[sheet]
+        q = query.lower() if query else None
+        fp = formula_pattern.lower() if formula_pattern else None
+        _type_map = {"number": "n", "text": "s", "formula": "f"}
+        tf = _type_map.get(type_filter) if type_filter else None
+        merged_ranges = list(ws.merged_cells.ranges) if merged_only else None
+        results = []
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
+            for cell in row:
+                if merged_only:
+                    in_merged = any(cell.coordinate in mr for mr in merged_ranges)
+                    if not in_merged:
+                        continue
+                if tf and cell.data_type != tf:
+                    continue
+                if type_filter == "empty" and cell.value is not None:
+                    continue
+                if fp:
+                    if cell.data_type != "f":
+                        continue
+                    raw = str(cell.value or "")
+                    if fp not in raw.lower():
+                        continue
+                if q:
+                    val_str = str(cell.value or "").lower()
+                    ref_str = cell.coordinate.lower()
+                    if q not in val_str and q not in ref_str:
+                        continue
+                merged_range = None
+                if merged_ranges:
+                    for mr in merged_ranges:
+                        if cell.coordinate in mr:
+                            merged_range = str(mr)
+                            break
+                val = self._fmt(cell.value)
+                if not val and cell.data_type != "nul" and type_filter != "empty":
+                    merged = self.cell_merged(cell.coordinate, sheet)
+                    if merged:
+                        val = merged["value"]
+                        merged_range = merged_range or merged["range"]
+                results.append({
+                    "ref": cell.coordinate,
+                    "sheet": sheet,
+                    "value": val,
+                    "type": _TYPE_LABELS.get(cell.data_type, "unknown"),
+                    "merged_range": merged_range,
+                })
+        return results
+
     def cell_style(self, ref, sheet=None):
         cell = self._resolve_cell(ref, sheet)
         f = cell.font
