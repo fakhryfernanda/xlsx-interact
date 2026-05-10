@@ -39,6 +39,15 @@ xlsx> cell C5 --table   (with header=both)
   Table: ProductData (B2:E20)
   Column: "Price"
   Row: "SKU-001"
+xlsx> cell E1           (merged cell D1:E1)
+[Sheet1] E1 = After DC - Immediate Cash (3-months) (text)
+  Merged: D1:E1
+xlsx> cell E1 --computed
+[Sheet1] E1 = After DC - Immediate Cash (3-months) (text)
+  Merged: D1:E1
+xlsx> cell E3 --table   (merged column header)
+  Table: Data (A1:E3)
+  Column: "After DC - Immediate Cash (3-months)"
 xlsx> cell B2 -s Sheet1
 xlsx> sheets
 xlsx> info
@@ -60,7 +69,7 @@ uv run xlsx data.xlsx info
 
 | Command | Description |
 |---------|-------------|
-| `cell <ref>` | Get cell value with auto-detected type (number/text/formula/date/boolean/error/empty) |
+| `cell <ref>` | Get cell value with auto-detected type (number/text/formula/date/boolean/error/empty). Auto-detects merged cells — if cell is in a merged range, shows value from top-left and the merged range |
 | `cell <ref> --computed` | Show computed value instead of formula string |
 | `cell <ref> --style` | Show font, fill, border, alignment, number format |
 | `cell <ref> --table` | Show containing Excel table name, range, column header, and row label (depends on header type) |

@@ -21,6 +21,8 @@ def _cell(data, fmt):
             parts.append(f"  Column: \"{t['column']}\"")
         if "row" in t:
             parts.append(f"  Row: \"{t['row']}\"")
+    if "merged_range" in data:
+        parts.append(f"  Merged: {data['merged_range']}")
     if "style" in data:
         s = data["style"]
         f = s["font"]

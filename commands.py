@@ -56,8 +56,26 @@ def cmd_cell(session, **kwargs):
     try:
         val, ctype = session.cell(ref, sheet)
         result = {"ref": ref.upper(), "sheet": sheet or session.current_sheet, "value": val, "type": ctype}
+        if not val:
+            merged = session.cell_merged(ref, sheet)
+            if merged:
+                result["value"] = merged["value"]
+                result["type"] = merged["type"]
+                result["merged_range"] = merged["range"]
         if "computed" in kwargs:
-            result["value"] = session.cell_computed(ref, sheet)
+            cv = session.cell_computed(ref, sheet)
+            if cv:
+                result["value"] = cv
+            else:
+                from openpyxl import load_workbook
+                wb = load_workbook(session.path, data_only=True)
+                try:
+                    merged = session.cell_merged(ref, sheet, wb=wb)
+                    if merged:
+                        result["value"] = merged["value"]
+                        result["merged_range"] = merged["range"]
+                finally:
+                    wb.close()
         if "style" in kwargs:
             result["style"] = session.cell_style(ref, sheet)
         if "table" in kwargs:

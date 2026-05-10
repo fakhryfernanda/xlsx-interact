@@ -74,6 +74,21 @@ class Session:
         finally:
             wb.close()
 
+    def cell_merged(self, ref, sheet=None, wb=None):
+        sheet = sheet or self._current_sheet
+        wb = wb or self.wb
+        ws = wb[sheet]
+        cell = self._resolve_cell(ref, sheet, wb)
+        for mr in ws.merged_cells.ranges:
+            if cell.coordinate in mr:
+                top = ws.cell(mr.min_row, mr.min_col)
+                return {
+                    "range": str(mr),
+                    "value": self._fmt(top.value),
+                    "type": _TYPE_LABELS.get(top.data_type, "unknown"),
+                }
+        return None
+
     def cell_style(self, ref, sheet=None):
         cell = self._resolve_cell(ref, sheet)
         f = cell.font
@@ -110,6 +125,13 @@ class Session:
         sheet = sheet or self._current_sheet
         ws = self.wb[sheet]
         col, row = self._parse_ref(ref)
+
+        def _resolve(val, r, c):
+            if val != "":
+                return val
+            m = self.cell_merged(f"{utils.get_column_letter(c)}{r}", sheet, wb=self.wb)
+            return m["value"] if m else ""
+
         for tname, tref in ws.tables.items():
             bounds = utils.range_boundaries(tref)
             if bounds and bounds[0] <= col <= bounds[2] and bounds[1] <= row <= bounds[3]:
@@ -117,7 +139,7 @@ class Session:
                 return {
                     "name": tname,
                     "range": tref,
-                    "column": self._fmt(header_cell.value),
+                    "column": _resolve(self._fmt(header_cell.value), bounds[1], col),
                 }
         for tname, meta in self._tables.get(sheet, {}).items():
             if isinstance(meta, str):
@@ -127,9 +149,9 @@ class Session:
                 result = {"name": tname, "range": meta["range"]}
                 h = meta.get("header", "row")
                 if h in ("row", "both"):
-                    result["column"] = self._fmt(ws.cell(row=bounds[1], column=col).value)
+                    result["column"] = _resolve(self._fmt(ws.cell(row=bounds[1], column=col).value), bounds[1], col)
                 if h in ("column", "both"):
-                    result["row"] = self._fmt(ws.cell(row=row, column=bounds[0]).value)
+                    result["row"] = _resolve(self._fmt(ws.cell(row=row, column=bounds[0]).value), row, bounds[0])
                 return result
         return None
 
